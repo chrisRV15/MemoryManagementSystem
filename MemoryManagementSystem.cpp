@@ -62,7 +62,7 @@ public:
             //Get the frame number from the page table
             int frame_number = page_table[page_id];
             //Free the frame
-            frames[frame_number] == nullptr;
+            frames[frame_number] = nullptr;
             //Remove the page from the page table
             page_table.erase(page_id);
         }
@@ -76,6 +76,34 @@ public:
 
 int main()
 {
-    std::cout << "Hello World!\n";
+    Memory memory(3);   //Declare the frames
+
+    //Create some page objects
+    Page* page1 = new Page(1, "Data1");
+    Page* page2 = new Page(2, "Data2");
+    Page* page3 = new Page(3, "Data3");
+    Page* page4 = new Page(4, "Data4");
+
+    //load the pages into memory
+    memory.load_page(page1);
+    memory.load_page(page2);
+    memory.load_page(page3);
+
+
+    cout << "Page 1 data: " << memory.read_memory(1) << endl;
+    cout << "Page 2 data: " << memory.read_memory(2) << endl;
+    cout << "Page 3 data: " << memory.read_memory(3) << endl;
+
+
+    memory.free_memory(1);
+    memory.free_memory(2);
+    memory.free_memory(3);
+
+
+    delete page1;
+    delete page2;
+    delete page3;
+
+    return 0;
 }
 
