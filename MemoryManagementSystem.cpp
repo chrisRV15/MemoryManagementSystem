@@ -1,5 +1,7 @@
 #include <iostream>
 #include <unordered_map>
+#include <list>
+#include <stdexcept>
 #include <vector>
 using namespace std;
 
@@ -16,59 +18,157 @@ class Memory {
 public:
     int size;   //Size of memory (number of frames)
     vector<Page*> frames;   //Vector of frames (can hold pages)
-    unordered_map<int, int> page_table; //Page table maps page ids to frame numbers
+    unordered_map<int, list<int>::iterator> page_table; //Page table maps page ids to positions in the LRU list
+    list<int> lru; //List to implement LRU
+    unordered_map<int, bool> dirty_bit; //Tracks wheter a page has been modified
+    int swap_space_size;
+    unordered_map<int, Page*> swap_space;
+
 
     //Constructor
-    Memory(int size) : size(size) {
+    Memory(int size, int swap_space_size) : size(size), swap_space_size(swap_space_size) {
         frames.resize(size, nullptr); //Initialize all frames asa nullptr
     }
 
 
     void load_page(Page* page) {
+
+        //If memory is full, evict the least recently used page
+        if (page_table.size() == size) {
+            evict_page();
+        }
         
+        //Load the page into the first available frame
         for (int i = 0; i < size; i++) {
             if (frames[i] == nullptr) {
-                //load the page into the frame
                 frames[i] = page;
-                //Update the page table
-                page_table[page->id] = i;
-                return;
+                break;
             }
         }
-        //if all frames are full, throw an exception
-        throw runtime_error("Memory is full");
+
+        //Add the page to the front of the LRU list
+        lru.push_front(page->id);
+        //Update the page table
+        page_table[page->id] = lru.begin();
+        dirty_bit[page->id] = false; //Dirty bit to false for newly loaded page
     }
 
 
     //Method to read data from a page in memory
     string read_memory(int page_id) {
-        //
         if (page_table.find(page_id) != page_table.end()) {
-            //Get the frame number from the page table
-            int frame_number = page_table[page_id];
+            //Move the accessed page to the front of the LRU list
+            lru.erase(page_table[page_id]);
+            lru.push_front(page_id);
+            page_table[page_id] = lru.begin();
+
             //Return the data of the page
-            return frames[frame_number]->data;
+            for (Page* page : frames) {
+                if (page != nullptr && page->id == page_id) {
+                    return page->data;
+                }
+            }
         }
         else {
-            // If the page is not in memory, throw an exception
-            throw runtime_error("Page not found in memory");
+            handle_page_fault(page_id);
+            return swap_space[page_id]->data;
+        }
+        // If the page is not in memory, throw an exception
+        throw runtime_error("Page not found in memory");
+    }
+
+    void write_memory(int page_id, string new_data) {
+        if (page_table.find(page_id) != page_table.end()) {
+            //Move the accessed page to the front of the LRU list
+            lru.erase(page_table[page_id]);
+            lru.push_front(page_id);
+            page_table[page_id] = lru.begin();
+
+            //Modify the data of the page
+            for (Page* page : frames) {
+                if (page != nullptr && page->id == page_id) {
+                    page->data = new_data;
+                    dirty_bit[page_id] = true; //Dirty bit to true since page is modified
+                    return;
+                }
+            }
+        }
+        else {
+            handle_page_fault(page_id);
+            swap_space[page_id]->data = new_data;
+            dirty_bit[page_id] = true; //Dirty bit to true for newly loaded page
         }
     }
 
     //Method to free a page from memory
     void free_memory(int page_id) {
-        //
         if (page_table.find(page_id) != page_table.end()) {
-            //Get the frame number from the page table
-            int frame_number = page_table[page_id];
-            //Free the frame
-            frames[frame_number] = nullptr;
-            //Remove the page from the page table
+            //Remove the page from the LRU list and the page table
+            lru.erase(page_table[page_id]);
             page_table.erase(page_id);
+            
+            //Free the frame holding the page
+            for (int i = 0; i < size; ++i) {
+                if (frames[i] != nullptr && frames[i]->id == page_id) {
+                    frames[i] = nullptr;
+                    break;
+                }
+            }
         }
         else {
             //if the page is not in memory, throw an exception
             throw runtime_error("Page not found in memory");
+        }
+    }
+private:
+    void evict_page() {
+        //LRU page replacement
+        int lru_page_id = lru.back(); //Get the least recently used page
+        lru.pop_back(); //Remove it from the LRU list
+
+        //
+        if (dirty_bit[lru_page_id]) {
+            for (Page* page : frames) {
+                if (page != nullptr && page->id == lru_page_id) {
+                    swap_space[lru_page_id] = page;
+                    dirty_bit[lru_page_id] = false;
+                    break;
+                }
+            }
+        }
+        //Remove the page from the page table and free its frame
+        page_table.erase(lru_page_id);
+        for (int i = 0; i < size; ++i) {
+            if (frames[i] != nullptr && frames[i]->id == lru_page_id) {
+                frames[i] = nullptr;
+                break;
+            }
+        }
+    }
+
+    void handle_page_fault(int page_id) {
+        if (swap_space.find(page_id) != swap_space.end()) {
+            //Page is in swap space, bring it back into memor
+            if (page_table.size() == size) {
+                evict_page(); // If no free frames, evict a page
+            }
+
+            //Load the page into the first available frame
+            for (int i = 0; i < size; ++i) {
+                if (frames[i] == nullptr) {
+                    frames[i] = swap_space[page_id];
+                    break;
+                }
+            }
+
+            //Add the page to the front of the LRU list
+            lru.push_front(page_id);
+            //Update the page table
+            page_table[page_id] = lru.begin();
+            swap_space.erase(page_id);
+        }
+        else {
+            throw runtime_error("Page not found in memory or swap space");
         }
     }
 };
@@ -76,7 +176,7 @@ public:
 
 int main()
 {
-    Memory memory(3);   //Declare the frames
+    Memory memory(3,2);   //Declare the frames and pages
 
     //Create some page objects
     Page* page1 = new Page(1, "Data1");
@@ -94,15 +194,30 @@ int main()
     cout << "Page 2 data: " << memory.read_memory(2) << endl;
     cout << "Page 3 data: " << memory.read_memory(3) << endl;
 
+    //Write to memory
+    memory.write_memory(1, "Modified data1");
+
+    //Read fro meory after modification
+    cout << "Page 1 data: " << memory.read_memory(1) << endl;
+
+    memory.load_page(page4);
+
+    //Test
+    try {
+        cout << "Page 2 data: " << memory.read_memory(2) << endl;
+    }
+    catch (const runtime_error& e) {
+        cout << e.what() << endl; 
+    }
 
     memory.free_memory(1);
-    memory.free_memory(2);
-    memory.free_memory(3);
-
-
-    delete page1;
-    delete page2;
-    delete page3;
+    //Test
+    try {
+        cout << "Page 1 data: " << memory.read_memory(1) << endl;
+    }
+    catch (const runtime_error& e) {
+        cout << e.what() << endl;
+    }
 
     return 0;
 }
