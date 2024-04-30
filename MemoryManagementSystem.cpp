@@ -3,6 +3,9 @@
 #include <list>
 #include <stdexcept>
 #include <vector>
+#include <fstream>
+#include <sstream>
+#include <cstring>
 using namespace std;
 
 class Page {
@@ -148,7 +151,7 @@ private:
 
     void handle_page_fault(int page_id) {
         if (swap_space.find(page_id) != swap_space.end()) {
-            //Page is in swap space, bring it back into memor
+            //Page is in swap space, bring it back into memory
             if (page_table.size() == size) {
                 evict_page(); // If no free frames, evict a page
             }
@@ -168,7 +171,7 @@ private:
             swap_space.erase(page_id);
         }
         else {
-            throw runtime_error("Page not found in memory or swap space");
+            cerr << "Page not found in memory or swap face." << endl;
         }
     }
 };
@@ -176,6 +179,7 @@ private:
 
 int main()
 {
+    
     Memory memory(3,2);   //Declare the frames and pages
 
     //Create some page objects
@@ -189,36 +193,101 @@ int main()
     memory.load_page(page2);
     memory.load_page(page3);
 
-
-    cout << "Page 1 data: " << memory.read_memory(1) << endl;
-    cout << "Page 2 data: " << memory.read_memory(2) << endl;
-    cout << "Page 3 data: " << memory.read_memory(3) << endl;
-
-    //Write to memory
-    memory.write_memory(1, "Modified data1");
-
-    //Read fro meory after modification
-    cout << "Page 1 data: " << memory.read_memory(1) << endl;
+    memory.read_memory(2);
 
     memory.load_page(page4);
 
-    //Test
-    try {
-        cout << "Page 2 data: " << memory.read_memory(2) << endl;
-    }
-    catch (const runtime_error& e) {
-        cout << e.what() << endl; 
-    }
-
-    memory.free_memory(1);
-    //Test
-    try {
-        cout << "Page 1 data: " << memory.read_memory(1) << endl;
-    }
-    catch (const runtime_error& e) {
-        cout << e.what() << endl;
+  
+    cout << memory.read_memory(2) << endl;
+    cout << memory.read_memory(3) << endl;
+    cout << memory.read_memory(4) << endl;
+        
+    /*
+    ifstream inputFile("project.txt");
+    if (!inputFile) {
+        cerr << "Error opening input file" << endl;
+        return 1;
     }
 
+    int frames, pages;
+    //Read memory frames and pages from the input file
+    if (!(inputFile >> frames >> pages)) {
+        cerr << "Error reading memory frames and pages from input file";
+        return 1;
+    }
+    //Initializing memory with the input
+    Memory memory(frames, pages);
+    cout << "Frames enter: " << frames << " Pages enter: " << pages << endl;
+    string line;
+    string action;
+
+    //Read each line form the input file
+    while (getline(inputFile, line)) {
+
+        stringstream ss(line);
+        ss >> action;
+
+        
+        if (action.compare("C") == 0) {
+            int pid = 0;
+            string data = "";
+            //Read the page ID and data from the line
+            if (!(ss >> pid >> data)) {
+                cerr << "Error reading pid and data for creating page from input file." << endl;
+                continue;
+            }
+            //Create new page object
+            cout << "Page Created Succesfully " << endl;
+            Page* page = new Page(pid, data.c_str());
+        }
+        else if (action == "L") {
+            int pid;
+            //Read the page ID from the line
+            if (!(ss >> pid)) {
+                cerr << "Error reading pid for loading page from input file." << endl;
+                continue;
+            }
+            //Load the page into memory
+            cout << "Page Load successfully " << endl;
+            memory.load_page(new Page(pid, "Data")); 
+        }
+        else if (action == "R") {
+            int pid;
+            //Read the page ID form the line
+            if (!(ss >> pid)) {
+                cerr << "Error reading pid for reading memory from input file" << endl;
+                continue;
+            }
+            // Read data from memory
+            cout << "Data read from memory for page " << pid << ": " << memory.read_memory(pid) << endl;
+        }
+        else if (action == "W") {
+            int pid;
+            string newData;
+            //Read the page Id and new data from the line
+            if (!(ss >> pid >> newData)) {
+                cerr << "Error reading pid and new data for writigng memory from input file." << endl;
+                continue;
+            }
+            //Write data into memory
+            cout << "Written succesfully" << endl;
+            memory.write_memory(pid, newData.c_str());
+        }
+        else if (action == "F") {
+            int pid;
+            //Read the page ID from the line
+            if (!(ss >> pid)) {
+                cerr << "Error reading pid for freening memory from input file." << endl;
+                continue;
+            }
+            //Free memory allocated to the page 
+            cout << "Freed Memory Successfully " << endl;
+            memory.free_memory(pid);
+        }
+    }
+
+    inputFile.close();
+    */
     return 0;
 }
 
