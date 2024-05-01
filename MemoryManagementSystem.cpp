@@ -180,7 +180,7 @@ private:
 int main()
 {
     
-    Memory memory(3,2);   //Declare the frames and pages
+    Memory memory(3,2);   //Declare the frames and swap size
 
     //Create some page objects
     Page* page1 = new Page(1, "Data1");
@@ -193,14 +193,17 @@ int main()
     memory.load_page(page2);
     memory.load_page(page3);
 
+    //Read the page
     memory.read_memory(2);
+    memory.read_memory(3);
 
-    memory.load_page(page4);
+    memory.load_page(page4);//Load new page to LRU take effect
 
   
     cout << memory.read_memory(2) << endl;
     cout << memory.read_memory(3) << endl;
     cout << memory.read_memory(4) << endl;
+    //cout << memory.read_memory(1) << endl;
         
     /*
     ifstream inputFile("project.txt");
