@@ -4,7 +4,3 @@ L 1
 R 1
 W 1 ModifiedData1
 R 1
-C 2 Data2
-L 2
-R 2
-W 2 ModifiedData2

@@ -25,7 +25,7 @@ public:
     list<int> lru; //List to implement LRU
     unordered_map<int, bool> dirty_bit; //Tracks wheter a page has been modified
     int swap_space_size;
-    unordered_map<int, Page*> swap_space;
+    unordered_map<int, Page*> swap_space; //Virtual Memory
 
 
     //Constructor
@@ -179,7 +179,7 @@ private:
 
 int main()
 {
-    
+    /*
     Memory memory(3,2);   //Declare the frames and swap size
 
     //Create some page objects
@@ -194,8 +194,8 @@ int main()
     memory.load_page(page3);
 
     //Read the page
-    memory.read_memory(2);
-    memory.read_memory(3);
+    //memory.read_memory(2);
+    //memory.read_memory(3);
 
     memory.load_page(page4);//Load new page to LRU take effect
 
@@ -203,24 +203,24 @@ int main()
     cout << memory.read_memory(2) << endl;
     cout << memory.read_memory(3) << endl;
     cout << memory.read_memory(4) << endl;
-    //cout << memory.read_memory(1) << endl;
-        
-    /*
+    cout << memory.read_memory(1) << endl;
+     */
+    
     ifstream inputFile("project.txt");
     if (!inputFile) {
         cerr << "Error opening input file" << endl;
         return 1;
     }
 
-    int frames, pages;
+    int frames, swapSpace;
     //Read memory frames and pages from the input file
-    if (!(inputFile >> frames >> pages)) {
+    if (!(inputFile >> frames >> swapSpace)) {
         cerr << "Error reading memory frames and pages from input file";
         return 1;
     }
     //Initializing memory with the input
-    Memory memory(frames, pages);
-    cout << "Frames enter: " << frames << " Pages enter: " << pages << endl;
+    Memory memory(frames, swapSpace);
+    cout << "Frames enter: " << frames << " Swap Space: " << swapSpace << endl;
     string line;
     string action;
 
@@ -290,7 +290,7 @@ int main()
     }
 
     inputFile.close();
-    */
+    
     return 0;
 }
 
