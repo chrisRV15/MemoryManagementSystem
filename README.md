@@ -1,1 +1,2 @@
 # MemoryManagementSystem
+An LRU page replacement algorithm, memory management logic, swap space management, and tracking the dirty bit are all included in this small C++ project. This system will be able to handle page faults, write out modified pages back into memory, and read from virtual memory. In order to simulate memory operations from an input file, this project should offer file I/O. Additionally, it will include appropriate use of data structures such as unordered_map, list, and vector, as well as good error handling.
